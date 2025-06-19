@@ -1,81 +1,82 @@
 package com.example.pexelsapp.screens.bookmarks
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.items
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.example.pexelsapp.R
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.pexelsapp.domain.Photo
+import com.example.pexelsapp.screens.bookmarks.elements.ListBookmarks
+import com.example.pexelsapp.screens.bookmarks.elements.NothingSavedView
+import com.example.pexelsapp.screens.bookmarks.elements.Title
+import com.example.pexelsapp.ui.components.PexelsLinearProgressIndicator
 
 @Composable
 fun BookmarksScreen(
     modifier: Modifier = Modifier,
-    onNavToDetailsScreen: () -> Unit,
+    viewModel: BookmarksScreenViewModel = hiltViewModel(),
+    onNavToDetailsScreen: (Long) -> Unit,
     onNavToHomeScreen: () -> Unit,
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+
     Column(modifier) {
-        Title()
-        ListBookmarks(
-            listOf(
-                R.drawable.vector,
-                R.drawable.vector,
-                R.drawable.vector,
-                R.drawable.vector,
-                R.drawable.vector,
-                R.drawable.vector,
-                R.drawable.vector,
-                R.drawable.vector,
-                R.drawable.vector,
-                R.drawable.vector,
-                R.drawable.vector,
-                R.drawable.vector,
-            ),
-            { onNavToDetailsScreen() })
+        Title(modifier = Modifier.align(Alignment.CenterHorizontally))
+        when (val state = uiState) {
+            is BookmarksScreenUiState.NothingSaved -> {
+                NothingSavedState(
+                    onExploreClick = onNavToHomeScreen,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            is BookmarksScreenUiState.Loading -> {
+                PexelsLinearProgressIndicator(
+                    modifier = modifier
+                        .padding(top = 12.dp)
+                        .fillMaxWidth()
+                )
+            }
+
+            is BookmarksScreenUiState.Loaded -> {
+                LoadedState(
+                    photos = state.favoritePhotos,
+                    onNavToDetailsScreen = { photoId -> onNavToDetailsScreen(photoId) },
+                    modifier = Modifier
+                        .padding(start = 24.dp, end = 24.dp, top = 29.dp)
+                        .fillMaxSize()
+                )
+            }
+        }
     }
 }
 
 @Composable
-fun Title(modifier: Modifier = Modifier) {
-    Text("hfjds")
+fun NothingSavedState(
+    onExploreClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    NothingSavedView(
+        onExploreClick = onExploreClick,
+        modifier = modifier
+    )
 }
 
 @Composable
-fun ListBookmarks(
-    listItems: List<Int>,
-    onClick: () -> Unit,
+fun LoadedState(
+    photos: List<Photo>,
+    onNavToDetailsScreen: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    LazyVerticalStaggeredGrid(
-        columns = StaggeredGridCells.Adaptive(200.dp),
-        verticalItemSpacing = 4.dp,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        content = {
-            items(listItems) { photo ->
-                Image(
-                    painter = painterResource(R.drawable.vector),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .background(Color.DarkGray)
-                        .fillMaxWidth()
-                        .wrapContentHeight()
-                        .clickable { onClick() }
-                )
-            }
-        },
-        modifier = Modifier.fillMaxSize()
+    ListBookmarks(
+        photos = photos,
+        onClick = { photoId -> onNavToDetailsScreen(photoId) },
+        modifier = modifier
     )
 }

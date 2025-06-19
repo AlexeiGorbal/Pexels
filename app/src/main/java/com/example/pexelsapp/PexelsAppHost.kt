@@ -5,9 +5,9 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.pexelsapp.screens.bookmarks.BookmarksScreen
-import com.example.pexelsapp.screens.ditails.DetailsScreen
-import com.example.pexelsapp.screens.home.HomeScreen
+import androidx.navigation.toRoute
+import com.example.pexelsapp.screens.bottomnavigation.BottomNavigationScreen
+import com.example.pexelsapp.screens.details.DetailsScreen
 import kotlinx.serialization.Serializable
 
 @Composable
@@ -15,42 +15,32 @@ fun PexelsAppHost(
     navController: NavHostController,
     modifier: Modifier = Modifier,
 ) {
-    NavHost(navController, startDestination = Home) {
-        composable<Home> {
-            HomeScreen(
-                modifier,
-                onNavToDetailsScreen = {
-                    navController.navigate(Details)
-                },
-                onNavToBookmarksScreen = {
-                    navController.navigate(Bookmarks)
-                }
+    NavHost(
+        navController = navController,
+        startDestination = BottomNavigation,
+        modifier = modifier
+    ) {
+        composable<BottomNavigation> {
+            BottomNavigationScreen(
+                modifier = modifier,
+                onNavToDetailsScreen = { navController.navigate(Details(it)) }
             )
         }
 
-        composable<Bookmarks> {
-            BookmarksScreen(
-                modifier,
-                onNavToDetailsScreen = {
-                    navController.navigate(Details)
-                },
-                onNavToHomeScreen = {
-                    navController.navigate(Home)
-                }
+        composable<Details> { backStackEntry ->
+            val details: Details = backStackEntry.toRoute()
+            DetailsScreen(
+                modifier = modifier,
+                photoId = details.photoId,
+                onBackPress = { navController.popBackStack() },
+                onNavToHomeScreen = { navController.navigate(BottomNavigation) }
             )
-        }
-
-        composable<Details> {
-            DetailsScreen(modifier)
         }
     }
 }
 
 @Serializable
-object Home
+data object BottomNavigation
 
 @Serializable
-object Bookmarks
-
-@Serializable
-object Details
+data class Details(val photoId: Long)

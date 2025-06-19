@@ -1,102 +1,194 @@
 package com.example.pexelsapp.screens.home
 
-import androidx.compose.foundation.Image
+import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.items
-import androidx.compose.material3.TextField
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.pexelsapp.R
+import com.example.pexelsapp.screens.home.elements.FeaturedCollectionsList
+import com.example.pexelsapp.screens.home.elements.ListPhotos
+import com.example.pexelsapp.screens.home.elements.NoNetworkState
+import com.example.pexelsapp.screens.home.elements.NoResultFoundState
+import com.example.pexelsapp.screens.home.elements.SearchField
+import com.example.pexelsapp.ui.components.PexelsLinearProgressIndicator
 
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeScreenViewModel = hiltViewModel(),
-    onNavToDetailsScreen: () -> Unit,
-    onNavToBookmarksScreen: (Int) -> Unit,
+    onNavToDetailsScreen: (Long) -> Unit,
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+    val state by viewModel.state.collectAsState(null)
     val text by viewModel.searchValue.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(true) {
+        viewModel.toastEvent.collect {
+            Toast.makeText(context, context.getString(it), Toast.LENGTH_SHORT).show()
+        }
+    }
 
     Column(modifier) {
-        SearchField(text ?: "", { viewModel.onSearchValue(it) })
-        ListItems(
-            listOf(
-                R.drawable.vector,
-                R.drawable.vector,
-                R.drawable.vector,
-                R.drawable.vector,
-                R.drawable.vector,
-                R.drawable.vector,
-                R.drawable.vector,
-                R.drawable.vector,
-                R.drawable.vector,
-                R.drawable.vector,
-                R.drawable.vector,
-                R.drawable.vector,
-            ),
-            { onNavToDetailsScreen() }
+        SearchField(
+            searchValue = text ?: "",
+            onSearchChange = { viewModel.search(it) },
+            onClearClick = { viewModel.search("") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 24.dp, end = 24.dp, top = 12.dp)
+                .clip(RoundedCornerShape(50.dp))
+                .background(MaterialTheme.colorScheme.surface)
+        )
+
+        when (uiState) {
+            UiState.Error -> {
+                ErrorState(
+                    onTryAgainClick = {
+                        viewModel.tryAgain()
+                    }
+                )
+            }
+
+            UiState.Loading -> {
+                LoadingState()
+            }
+
+            UiState.Founding -> {
+                state?.let { state ->
+                    FoundingState(
+                        state = state,
+                        onSearchValue = { viewModel.search(it) },
+                    )
+                }
+            }
+
+            UiState.NotFound -> {
+                state?.let { state ->
+                    NotFoundState(
+                        state = state,
+                        onSearchValue = { viewModel.search(it) },
+                        onExploreClick = { viewModel.onExplore() }
+                    )
+                }
+            }
+
+            is UiState.Loaded -> {
+                state?.let { state ->
+                    LoadedState(
+                        state = state,
+                        onSearchValue = { viewModel.search(it) },
+                        onNavToDetailsScreen = { onNavToDetailsScreen(it) })
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun NotFoundState(
+    state: HomeScreenState,
+    onSearchValue: (String) -> Unit,
+    onExploreClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    state.collections.also {
+        FeaturedCollectionsList(
+            collectionsList = it,
+            onClick = { collectionTitle ->
+                onSearchValue(collectionTitle)
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 24.dp, top = 24.dp)
+        )
+    }
+    NoResultFoundState(
+        onExploreClick = onExploreClick,
+        modifier = modifier.fillMaxSize()
+    )
+}
+
+@Composable
+fun LoadingState() {
+    PexelsLinearProgressIndicator(
+        modifier = Modifier
+            .padding(top = 12.dp)
+            .fillMaxWidth()
+    )
+}
+
+@Composable
+fun ErrorState(
+    onTryAgainClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    NoNetworkState(
+        onTryAgainClick = onTryAgainClick,
+        modifier = modifier.fillMaxSize()
+    )
+}
+
+@Composable
+fun LoadedState(
+    state: HomeScreenState,
+    onSearchValue: (String) -> Unit,
+    onNavToDetailsScreen: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    state.collections.also { collectionsList ->
+        FeaturedCollectionsList(
+            collectionsList = collectionsList,
+            onClick = { collectionTitle ->
+                onSearchValue(collectionTitle)
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 24.dp, top = 24.dp)
+        )
+    }
+    state.photos.also { photos ->
+        ListPhotos(
+            listPhotos = photos,
+            onClick = { onNavToDetailsScreen(it) },
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(start = 24.dp, end = 24.dp, top = 24.dp)
         )
     }
 }
 
 @Composable
-fun SearchField(
-    searchValue: String,
-    onSearchChange: (String) -> Unit,
-    modifier: Modifier = Modifier
+fun FoundingState(
+    state: HomeScreenState,
+    onSearchValue: (String) -> Unit,
 ) {
-    TextField(
-        value = searchValue,
-        onValueChange = { onSearchChange(it) },
+    state.collections.also {
+        FeaturedCollectionsList(
+            collectionsList = it,
+            onClick = { collectionTitle ->
+                onSearchValue(collectionTitle)
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 24.dp, top = 24.dp)
+        )
+    }
+    PexelsLinearProgressIndicator(
+        modifier = Modifier
+            .padding(top = 12.dp)
+            .fillMaxWidth()
     )
-}
-
-@Composable
-fun ListItems(
-    listItems: List<Int>,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    LazyVerticalStaggeredGrid(
-        columns = StaggeredGridCells.Adaptive(200.dp),
-        verticalItemSpacing = 4.dp,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        content = {
-            items(listItems) { photo ->
-                Image(
-                    painter = painterResource(R.drawable.vector),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .background(Color.DarkGray)
-                        .fillMaxWidth()
-                        .wrapContentHeight()
-                        .clickable { onClick() }
-                )
-            }
-        },
-        modifier = Modifier.fillMaxSize()
-    )
-}
-
-@Composable
-fun BottomNavigation(
-    selectedDestination: Int,
-    modifier: Modifier = Modifier
-) {
 }
