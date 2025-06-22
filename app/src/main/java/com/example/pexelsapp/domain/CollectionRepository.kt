@@ -4,7 +4,6 @@ import com.example.pexelsapp.domain.remote.CollectionEntity
 import com.example.pexelsapp.domain.remote.PexelsApi
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.text.isNullOrBlank
 
 @Singleton
 class CollectionRepository @Inject constructor(private val api: PexelsApi) {

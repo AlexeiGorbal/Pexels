@@ -14,10 +14,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.pexelsapp.web.download.AndroidDownloader
 import com.example.pexelsapp.screens.details.elements.BookmarkButton
 import com.example.pexelsapp.screens.details.elements.DownloadButton
 import com.example.pexelsapp.screens.details.elements.ImageNotFoundView
