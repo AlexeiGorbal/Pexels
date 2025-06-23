@@ -16,8 +16,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         installSplashScreen()
+        enableEdgeToEdge()
         setContent {
             PexelsAppTheme(dynamicColor = false) {
                 val navController = rememberNavController()
