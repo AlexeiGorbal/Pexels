@@ -32,7 +32,6 @@ fun DetailsScreen(
     viewModel: DetailsScreenViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val state by viewModel.state.collectAsState()
 
     LaunchedEffect(key1 = Unit) {
         viewModel.getPhotoById(photoId)
@@ -40,39 +39,44 @@ fun DetailsScreen(
 
     Scaffold(modifier = modifier) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
-            state?.also {
-                TopBarView(
-                    photographer = it.photo.photographer,
-                    onBackPress = onBackPress,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp)
-                )
-                when (uiState) {
-                    DetailsScreenUiState.Loading -> {
-                        PexelsLinearProgressIndicator(
-                            modifier = modifier
-                                .padding(top = 12.dp)
-                                .fillMaxWidth()
-                        )
-                    }
+            val state = uiState
+            TopBarView(
+                photographer = if (state is DetailsScreenUiState.Loaded) {
+                    state.photo.photographer
+                } else {
+                    ""
+                },
+                onBackPress = onBackPress,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+            )
 
-                    DetailsScreenUiState.NotFound -> {
-                        ImageNotFoundState(
-                            onExploreClick = onNavToHomeScreen,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
+            when (state) {
+                is DetailsScreenUiState.Loading -> {
+                    PexelsLinearProgressIndicator(
+                        modifier = Modifier
+                            .padding(top = 12.dp)
+                            .fillMaxWidth()
+                    )
+                }
 
-                    DetailsScreenUiState.Loaded -> {
-                        LoadedState(
-                            photo = it.photo.url,
-                            isFavourite = it.isFavourite,
-                            onDownloadClick = { viewModel.onDownloadClick() },
-                            onBookmarkClick = { viewModel.onBookmarkSavedStateChanged() },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                is DetailsScreenUiState.NotFound -> {
+                    ImageNotFoundState(
+                        onExploreClick = onNavToHomeScreen,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                is DetailsScreenUiState.Loaded -> {
+                    LoadedState(
+                        photo = state.photo.url,
+                        isFavourite = state.isFavourite,
+                        onDownloadClick = { viewModel.onDownloadClick() },
+                        onBookmarkClick = { viewModel.onBookmarkSavedStateChanged() },
+                        modifier = Modifier.weight(1f)
+                    )
+
                 }
             }
         }
